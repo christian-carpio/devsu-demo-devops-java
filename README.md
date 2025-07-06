@@ -1,142 +1,64 @@
-# Demo Devops Java
+# Prueba Practica Devsu Devops - Christian Carpio
 
-This is a simple application to be used in the technical test of DevOps.
+Este documento detalla el proceso llevado a cabo para desplegar la aplicacion **devsu-demo-devops-java** en GCP por medio de un pipeline de Gihthub Actions. 
 
-## Getting Started
+## Diagrama del Despliegue
+![Diagrama del Despliegue](docs/devsu-demo-devops.drawio.png)
 
-### Prerequisites
+## Tecnologias empleadas
+- Docker
+- Jacoco
+- SpotBugs
+- Trivy
+- Terraform (IaC)
+- Google Cloud Platform / GCP (Proveedor de cloud computing)
+- Google Kubernetes Engine / GKE (Servicio)
+- Kubernetes (k8)
 
-- Java Version 17
-- Spring Boot 3.0.5
-- Maven
+## 1. Modificaciones al proyecto base
+Se agrego la dependencia *spring-boot-starter-actuator* y los plugins *spotbugs-maven-plugin* y *jacobo-maven-plugin*. Esto se realizo con el objetivo de exponer el endpoint */api/actuator/health* (para el healthcheck del dockerfile) y realizar las validaciones de covertura de codigo y analisis de codigo estatico respectivamente. 
 
-### Installation
+Adicionalmente, se modifico el archivo *application.properties* y se agrego:
 
-Clone this repo.
+- management.endpoints.web.exposure.include=health,info 
+- management.endpoint.health.show-details=always
 
-```bash
-git clone https://bitbucket.org/devsu/demo-devops-java.git
-```
+Con la finalidad de exponer correctamente el endpoint para el mencionado healthcheck.
 
-### Database
+## 2. Creación del dockerfile
+Se separo el dockerfile en 2 stages: Compilacion y Ejecucion
 
-The database is generated as a file in the main path when the project is first run, and its name is `test.mv.db`.
+Durante la primera fase, se descargan las depencias definidas en el archivo pom y se compila el proyecto sin realizar los unit test (estos se realizan durante la ejecucion del pipeline).
 
-Consider giving access permissions to the file for proper functioning.
+En la segunda fase, se crean tanto un usuario como un grupo dedicado para poder ejecutar la aplicacion sin tener permisos de root user. Luego, se copia el archivo .jar resultante de la fase anterior, se expone el puerto 8000 y se configuran las variables de entorno. 
 
-## Usage
+Posteriormente, se realiza el healthcheck usando el endpoint /api/actuator/health para comprobar el correcto funcionamiento del contenedor y realizar un reinicio automatico en caso de ser necesario.
 
-To run tests you can use this command.
+En cuanto a los comandos que usados cuando arranca el contenedor, se habilito *java*, *-jar* y *app.jar*. 
 
-```bash
-mvn clean test
-```
+Finalmente, se agregaron labels con la informacion del maintainer, version y nombre de aplicacion.
 
-To run locally the project you can use this command.
+## 3. Aprovisionamiento de GKE con Terraform en GCP
+Por medio de terraform, se aprovisono un cluster de GKE usando los archivos
+- main.tf : Define el cluster y una custom pool de nodos a crearse en GCP
+- outputs.tf : Regresa informacion para identificar el cluster como nombre y ubicacion
+- provider : Define la informacion del provider a emplear (GCP), el nombre del proyecto y region donde se va a desplegar el cluster
 
-```bash
-mvn spring-boot:run
-```
+Con esta estructura, se crea un cluster bajo el nombre *devsu-demo-devops-cluster* en la zona *us-central1-a*. Una vez creado, se elimina el nodo creado por defecto y se crean 2 nodos para soportar la carga de trabajo deseada. Estos nodos usan una maquina tipo *e2-medium* para estar por debajo de los limites del plan de prueba gratuito de GCP. 
 
-Open http://127.0.0.1:8000/api/swagger-ui.html with your browser to see the result.
+Adicionalmente, se habiliaron las opciones *auto_repair* y *auto_upgrade* para tener tolerancia a fallos y actualizaciones. 
 
-### Features
+Se decidio no incluir el aprovisionamiento de esta estructura en el pipeline ya que:
+- No es necesario realizar reaprovisionamientos frecuentes en este escenario, la infraestructura es constante
+- Su inclusión incrementaria considerablemente el tiempo de ejecución del pipeline
 
-These services can perform,
+## 4. Creación del pipeline
+Usando Github Actions, se creo un pipeline que abarca desde la compilacion del proyecto hasta el despliegue de los contenedores en GKE
 
-#### Create User
-
-To create a user, the endpoint **/api/users** must be consumed with the following parameters:
-
-```bash
-  Method: POST
-```
-
-```json
-{
-    "dni": "dni",
-    "name": "name"
-}
-```
-
-If the response is successful, the service will return an HTTP Status 200 and a message with the following structure:
-
-```json
-{
-    "id": 1,
-    "dni": "dni",
-    "name": "name"
-}
-```
-
-If the response is unsuccessful, we will receive status 400 and the following message:
-
-```json
-{
-    "errors": [
-        "error"
-    ]
-}
-```
-
-#### Get Users
-
-To get all users, the endpoint **/api/users** must be consumed with the following parameters:
-
-```bash
-  Method: GET
-```
-
-If the response is successful, the service will return an HTTP Status 200 and a message with the following structure:
-
-```json
-[
-    {
-        "id": 1,
-        "dni": "dni",
-        "name": "name"
-    }
-]
-```
-
-#### Get User
-
-To get an user, the endpoint **/api/users/<id>** must be consumed with the following parameters:
-
-```bash
-  Method: GET
-```
-
-If the response is successful, the service will return an HTTP Status 200 and a message with the following structure:
-
-```json
-{
-    "id": 1,
-    "dni": "dni",
-    "name": "name"
-}
-```
-
-If the user id does not exist, we will receive status 404 and the following message:
-
-```json
-{
-    "errors": [
-        "User not found: <id>"
-    ]
-}
-```
-
-If the response is unsuccessful, we will receive status 400 and the following message:
-
-```json
-{
-    "errors": [
-        "error"
-    ]
-}
-```
-
-## License
-
-Copyright © 2023 Devsu. All rights reserved.
+### Jobs creados
+- Build
+- Unit Test & Code Coverage
+- Static Code Analysis
+- Build and Push Docker Image
+- Security Scan
+- Deploy to GKE
