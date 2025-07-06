@@ -89,3 +89,9 @@ En caso de que exista una configuración previa de deployment.yaml, esta es elim
 - **configmap.yaml :** Define un ConfigMap que contiene información básica del proyecto, como el nombre de la aplicación, la versión y una breve descripción.
 
 Una vez ejecutados estos manifiestos, se espera un máximo de 5 minutos a que los pods se desplieguen correctamente. En caso de no completarse existosamente, el job fallara y se detiene el pipeline.
+
+## 6. URL Publicas:
+Pueden consultar las siguientes URL para verificar el funcionamiento del despliegue:
+- [http://107.178.242.9/api/swagger-ui/index.html#/user-controller/list](http://107.178.242.9/api/swagger-ui/index.html#/user-controller/list)
+- [http://107.178.242.9/api/users](http://107.178.242.9/api/users)
+- [http://107.178.242.9/api/actuator/health](http://107.178.242.9/api/actuator/health)
