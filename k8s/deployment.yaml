@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devsu-demo-devops
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: devsu-demo-devops
+  template:
+    metadata:
+      labels:
+        app: devsu-demo-devops
+    spec:
+      containers:
+        - name: devsu-demo-devops
+          image: christiancarpio2210/devsu-demo-devops-java:__IMAGE_TAG__
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
+          readinessProbe:
+            httpGet:
+              path: /api/actuator/health
+              port: 8000
+            initialDelaySeconds: 60 
+            periodSeconds: 10 
+            timeoutSeconds: 5
+            failureThreshold: 6 
+
+          livenessProbe:
+            httpGet:
+              path: /api/actuator/health
+              port: 8000
+            initialDelaySeconds: 90
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3

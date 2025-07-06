@@ -1,0 +1,9 @@
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: devsu-demo-health-check
+spec:
+  healthCheck:
+    type: HTTP
+    requestPath: /api/actuator/health
+    port: 8000

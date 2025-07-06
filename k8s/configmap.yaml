@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: devsu-demo-devops-config
+data:
+  app_config: |
+    {
+      "appName": "Devsu Demo DevOps Java",
+      "version": "1.0.0",
+      "description": "A demo application for DevOps practices using Java."
+    }
