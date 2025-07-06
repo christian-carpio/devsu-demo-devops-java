@@ -70,7 +70,7 @@ Posterior a las validaciones anteriores, se construyen 2 imagenes de la aplicaci
 #### Security Scan:
 Utilizando Trivy, se escanea la imagen construida con el tag *latest* en busca de vulnerabilidades conocidads (CVEs) a nivel del sistema operativo (OS) como de las dependencias usadas en el proyecto. El resultado del escaneo es almacenado en el archivo *trivy-report.json* para ser subido como un artefacto del pipeline.
 
-#### Deploy to GKE (usando k8:
+#### Deploy to GKE (usando K8s):
 En el último job del pipeline se configura el depliegue hacia GKE usando los manifiestos ubicados en la carpeta k8s/. 
 
 Primero, se accede a GCP usando las credenciales definidas en los secrets y se configura el CLI. Una vez hecho esto, se obtiene tanto el nombre y region del cluster, así como el ID del proyecto para poder interactuar con el cluster.
